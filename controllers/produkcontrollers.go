@@ -8,61 +8,44 @@ import (
 	"strconv"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/session"
+	// "github.com/gofiber/fiber/v2/middleware/session"
 	"gorm.io/gorm"
 )
 
 type ProdukControllers struct {
 	// Declare variables
-	Db    *gorm.DB
-	store *session.Store
+	DB *gorm.DB
+	// store *session.Store
 }
 
-func InitProdukControllers(s *session.Store) *ProdukControllers {
+func InitProdukControllers() *ProdukControllers {
 	db := database.ConnectDatabase()
 	db.AutoMigrate(&models.Produk{})
-	return &ProdukControllers{Db: db, store: s}
+	return &ProdukControllers{DB: db}
 }
 
 func (controllers *ProdukControllers) TampilProduk(c *fiber.Ctx) error {
 	var prod []models.Produk
-	err := models.TampilProduk(controllers.Db, &prod)
+	err := models.TampilProduk(controllers.DB, &prod)
 	if err != nil {
 		return c.Status(http.StatusNotFound).JSON(fiber.Map{
 			"message": "Data tidak ditemukan1",
 		})
 	}
-	sess, err := controllers.store.Get(c)
+	// sess, err := controllers.store.Get(c)
 
 	if err != nil {
 		return c.Status(http.StatusNotFound).JSON(fiber.Map{
 			"message": "Data tidak ditemukan2",
 		})
 	}
-	val := sess.Get("userId")
+	// val := sess.Get("userId")
 	return c.JSON(fiber.Map{
 		"message": "Data berhasil Tampil",
-		"UserId":  val,
-		"Prod":    prod,
+		// "UserId":  val,
+		"Prod": prod,
 	})
 }
-
-// func (controllers *ProdukControllers) TampilProdukId(c *fiber.Ctx) error {
-// 	id := c.Params("id")
-// 	var products models.Produk
-// 	if err := database.DB.First(&products, id).Error; err != nil {
-// 		if err == gorm.ErrRecordNotFound {
-// 			return c.Status(http.StatusNotFound).JSON(fiber.Map{
-// 				"message": "Data tidak ditemukan1",
-// 			})
-// 		}
-// 		return c.Status(http.StatusInternalServerError).JSON(fiber.Map{
-// 			"message": "Data tidak ditemuka!",
-// 		})
-// 	}
-
-// 	return c.JSON(products)
-// }
 
 func (controllers *ProdukControllers) TambahProduk(c *fiber.Ctx) error {
 	var newproduk models.Produk
@@ -101,12 +84,12 @@ func (controllers *ProdukControllers) TambahProduk(c *fiber.Ctx) error {
 	return c.JSON(newproduk)
 }
 
-func (controllers *ProdukControllers) DetailProduk(c *fiber.Ctx) error {
+func (controllers *ProdukControllers) DetailProdukId(c *fiber.Ctx) error {
 	id := c.Params("id")
 	idn, _ := strconv.Atoi(id)
 
 	var produk models.Produk
-	err := models.TampilProdukId(controllers.Db, &produk, idn)
+	err := models.TampilProdukId(controllers.DB, &produk, idn)
 	if err != nil {
 		return c.SendStatus(500) // http 500 internal server error
 	}

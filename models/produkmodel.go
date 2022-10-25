@@ -4,13 +4,13 @@ import "gorm.io/gorm"
 
 type Produk struct {
 	gorm.Model
-	Id        int          `json: "id" validate:"required"`
-	Name      string       `json: "name" validate:"required"`
-	Image     string       `json: "image" validate:"required"`
-	Quantity  int          `json: "quantity" validate:"required"`
-	Price     float32      `json: "price" validate:"required"`
-	Keranjang []*Keranjang `gorm:"many2many:keranjang_produk;"`
-	Transaksi []*Transaksi `gorm:"many2many:transaksi_produk;"`
+	Id         int          `json: "id" validate:"required"`
+	Name       string       `json: "name" validate:"required"`
+	Image      string       `json: "image" validate:"required"`
+	Quantity   int          `json: "quantity" validate:"required"`
+	Price      float32      `json: "price" validate:"required"`
+	Keranjangs []*Keranjang `gorm:"many2many:keranjang_produk;"`
+	Transaksis []*Transaksi `gorm:"many2many:transaksi_produk;"`
 }
 
 func TambahProduk(db *gorm.DB, newProduct *Produk) (err error) {

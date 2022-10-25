@@ -5,7 +5,7 @@ import (
 	"projectsrest/models"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/session"
+	// "github.com/gofiber/fiber/v2/middleware/session"
 	"github.com/golang-jwt/jwt/v4"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
@@ -15,14 +15,14 @@ import (
 )
 
 type AuthControllers struct {
-	Db    *gorm.DB
-	store *session.Store
+	DB *gorm.DB
+	// store *session.Store
 }
 
-func InitAuthControllers(s *session.Store) *AuthControllers {
+func InitAuthControllers() *AuthControllers {
 	db := database.ConnectDatabase()
-	db.AutoMigrate(&models.User{})
-	return &AuthControllers{Db: db, store: s}
+	// db.AutoMigrate(&models.User{})
+	return &AuthControllers{DB: db}
 }
 
 func (controllers *AuthControllers) Register(c *fiber.Ctx) error {
@@ -39,19 +39,30 @@ func (controllers *AuthControllers) Register(c *fiber.Ctx) error {
 	user.Password = sHash
 
 	// save user
-	err := models.TambahUser(controllers.Db, &user)
+	err := models.TambahUser(controllers.DB, &user)
 	if err != nil {
 		return c.SendStatus(500) // Server error, gagal menyimpan user
 	}
+
+	var keranjang models.Keranjang
+	errCart := models.TambahKeranjang(controllers.DB, &keranjang, user.ID)
+	if errCart != nil {
+		// Server error, gagal menyimpan user
+		return c.JSON(fiber.Map{
+			"status":  500,
+			"message": "Server error, gagal menyimpan user",
+		})
+	}
+
 	return c.JSON(user)
 }
 
 func (controllers *AuthControllers) Login(c *fiber.Ctx) error {
 	var users models.User
 	user := c.FormValue(users.Username)
-	pass := c.FormValue(users.Password)
-
+	pass := c.FormValue(users.Username)
 	// Throws Unauthorized error
+
 	if user != users.Username || pass != users.Password {
 		return c.SendStatus(fiber.StatusUnauthorized)
 	}
@@ -73,6 +84,7 @@ func (controllers *AuthControllers) Login(c *fiber.Ctx) error {
 			return c.SendStatus(fiber.StatusInternalServerError)
 		}
 		return c.JSON(fiber.Map{
+			"message": "Success Login",
 			"token":   t,
 			"expired": exp.Format("2006-01-02 15:04:05"),
 		})
@@ -115,11 +127,11 @@ func (controllers *AuthControllers) Login(c *fiber.Ctx) error {
 // /logout
 func (controllers *AuthControllers) Logout(c *fiber.Ctx) error {
 
-	sess, err := controllers.store.Get(c)
-	if err != nil {
-		panic(err)
-	}
-	sess.Destroy()
+	// sess, err := controllers.store.Get(c)
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// sess.Destroy()
 	return c.JSON(fiber.Map{
 		"message": "Berhasil Logout",
 	})
