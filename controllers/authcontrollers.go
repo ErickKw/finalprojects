@@ -1,14 +1,17 @@
 package controllers
 
 import (
-	"net/http"
 	"projectsrest/database"
 	"projectsrest/models"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/session"
+	"github.com/golang-jwt/jwt/v4"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
+
+	"time"
+	// "github.com/gofiber/jwt/v3"
 )
 
 type AuthControllers struct {
@@ -18,7 +21,7 @@ type AuthControllers struct {
 
 func InitAuthControllers(s *session.Store) *AuthControllers {
 	db := database.ConnectDatabase()
-	db.AutoMigrate(&models.Produk{})
+	db.AutoMigrate(&models.User{})
 	return &AuthControllers{Db: db, store: s}
 }
 
@@ -59,37 +62,70 @@ func (controllers *AuthControllers) Register(c *fiber.Ctx) error {
 }
 
 func (controllers *AuthControllers) Login(c *fiber.Ctx) error {
-	sess, err := controllers.store.Get(c)
-	if err != nil {
-		panic(err)
-	}
-	var user models.User
-	if err := c.BodyParser(&user); err != nil {
-		return c.Status(http.StatusNotFound).JSON(fiber.Map{
-			"message": "Data User Tidak Ditemukan 1",
-		})
-	}
-	// Find user
-	errs := models.CariUsername(controllers.Db, &user, user.Username)
-	if errs != nil {
-		return c.Status(http.StatusNotFound).JSON(fiber.Map{
-			"message": "Data tidak ditemukan 2",
-		})
+	var users models.User
+	user := c.FormValue(users.Username)
+	pass := c.FormValue(users.Password)
+
+	// Throws Unauthorized error
+	if user != users.Username || pass != users.Password {
+		return c.SendStatus(fiber.StatusUnauthorized)
 	}
 
-	// Compare password
-	compare := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(user.Password))
-	if compare == nil { // compare == nil artinya hasil compare di atas true
-		sess.Set("username", user.Username)
-		sess.Set("userId", user.ID)
-		sess.Save()
+	// Create the Claims
+	compare := bcrypt.CompareHashAndPassword([]byte(users.Password), []byte(users.Password))
+	if compare != nil {
+		exp := time.Now().Add(time.Hour * 72)
+		claims := jwt.MapClaims{
+			"admin": true,
+			"exp":   exp.Unix(),
+		}
+		// Create token
+		token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
-		return c.Status(http.StatusNotFound).JSON(fiber.Map{
-			"message": "Data User Tidak Ditemukan 3",
+		// Generate encoded token and send it as response.
+		t, err := token.SignedString([]byte("mysecretpassword"))
+		if err != nil {
+			return c.SendStatus(fiber.StatusInternalServerError)
+		}
+		return c.JSON(fiber.Map{
+			"token":   t,
+			"expired": exp.Format("2006-01-02 15:04:05"),
 		})
 	}
-	return c.SendString("Success")
+	return c.SendString("Status Unauthorized")
+
 }
+
+// func (controllers *AuthControllers) Login(c *fiber.Ctx) error {
+// 	sess, err := controllers.store.Get(c)
+// 	if err != nil {
+// 		panic(err)
+// 	}
+// 	var user models.User
+// 	if err := c.BodyParser(&user); err != nil {
+// 		return c.Status(http.StatusNotFound).JSON(fiber.Map{
+// 			"message": "Data User Tidak Ditemukan 1",
+// 		})
+// 	}
+// 	// Find user
+// 	errs := models.CariUsername(controllers.Db, &user, user.Username)
+// 	if errs != nil {
+// 		return c.Status(http.StatusNotFound).JSON(fiber.Map{
+// 			"message": "Data tidak ditemukan 2",
+// 		})
+// 	}
+
+// 	// Compare password
+// 	compare := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(user.Password))
+// 	if compare == nil { // compare == nil artinya hasil compare di atas true
+// 		sess.Set("username", user.Username)
+// 		sess.Set("userId", user.ID)
+// 		sess.Save()
+
+// 		return c.SendString("Data Tidak Ditemukan!")
+// 	}
+// 	return c.SendString("Success")
+// }
 
 // /logout
 func (controllers *AuthControllers) Logout(c *fiber.Ctx) error {
