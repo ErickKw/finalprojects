@@ -27,15 +27,13 @@ func InitAuthControllers(s *session.Store) *AuthControllers {
 
 func (controllers *AuthControllers) Register(c *fiber.Ctx) error {
 	var user models.User
-	var keranjang models.Keranjang
-
 	if err := c.BodyParser(&user); err != nil {
 		return c.SendStatus(400) // Bad Request, RegisterForm is not complete
 	}
 
 	// Hash password
-	bytes, _ := bcrypt.GenerateFromPassword([]byte(user.Password), 10)
-	sHash := string(bytes)
+	hashpw, _ := bcrypt.GenerateFromPassword([]byte(user.Password), 10)
+	sHash := string(hashpw)
 
 	// Simpan hashing, bukan plain passwordnya
 	user.Password = sHash
@@ -45,19 +43,6 @@ func (controllers *AuthControllers) Register(c *fiber.Ctx) error {
 	if err != nil {
 		return c.SendStatus(500) // Server error, gagal menyimpan user
 	}
-
-	// Find user
-	errs := models.CariUsername(controllers.Db, &user, user.Username)
-	if errs != nil {
-		return c.SendStatus(500) // Server error, gagal menyimpan user
-	}
-
-	// also create cart
-	errKeranjang := models.TambahKeranjang(controllers.Db, &keranjang, user.ID)
-	if errKeranjang != nil {
-		return c.SendStatus(500) // Server error, gagal menyimpan user
-	}
-	// if succeed
 	return c.JSON(user)
 }
 

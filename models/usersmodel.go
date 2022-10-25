@@ -6,12 +6,12 @@ import (
 
 type User struct {
 	gorm.Model
-	Name      string `json:"name" validate:"required"`
-	Address   string `son:"address" validate:"required"`
-	Nohp      int    `json:"nohp" validate:"required"`
-	Email     string `json:"email" validate:"required"`
-	Username  string `json:"username" validate:"required"`
-	Password  string `json:"password" validate:"required"`
+	Name      string `form:"name" json:"name" validate:"required"`
+	Address   string `form:"address" json:"address" validate:"required"`
+	Nohp      int    `form:"nohp" json:"nohp" validate:"required"`
+	Email     string `form:"email" json:"email" validate:"required"`
+	Username  string `form:"username" json:"username" validate:"required"`
+	Password  string `form:"password" json:"password" validate:"required"`
 	Keranjang Keranjang
 	Transaksi []Transaksi
 }
