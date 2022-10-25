@@ -47,22 +47,22 @@ func (controllers *ProdukControllers) TampilProduk(c *fiber.Ctx) error {
 	})
 }
 
-func (controllers *ProdukControllers) TampilProdukId(c *fiber.Ctx) error {
-	id := c.Params("id")
-	var products models.Produk
-	if err := database.DB.First(&products, id).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return c.Status(http.StatusNotFound).JSON(fiber.Map{
-				"message": "Data tidak ditemukan1",
-			})
-		}
-		return c.Status(http.StatusInternalServerError).JSON(fiber.Map{
-			"message": "Data tidak ditemuka!",
-		})
-	}
+// func (controllers *ProdukControllers) TampilProdukId(c *fiber.Ctx) error {
+// 	id := c.Params("id")
+// 	var products models.Produk
+// 	if err := database.DB.First(&products, id).Error; err != nil {
+// 		if err == gorm.ErrRecordNotFound {
+// 			return c.Status(http.StatusNotFound).JSON(fiber.Map{
+// 				"message": "Data tidak ditemukan1",
+// 			})
+// 		}
+// 		return c.Status(http.StatusInternalServerError).JSON(fiber.Map{
+// 			"message": "Data tidak ditemuka!",
+// 		})
+// 	}
 
-	return c.JSON(products)
-}
+// 	return c.JSON(products)
+// }
 
 func (controllers *ProdukControllers) TambahProduk(c *fiber.Ctx) error {
 	var newproduk models.Produk
@@ -86,7 +86,7 @@ func (controllers *ProdukControllers) TambahProduk(c *fiber.Ctx) error {
 
 			// Save the files to disk:
 			newproduk.Image = fmt.Sprintf(file.Filename)
-			if err := c.SaveFile(file, fmt.Sprintf("public/upload/%s", file.Filename)); err != nil {
+			if err := c.SaveFile(file, fmt.Sprintf("upload/%s", file.Filename)); err != nil {
 				return err
 			}
 		}
@@ -101,31 +101,17 @@ func (controllers *ProdukControllers) TambahProduk(c *fiber.Ctx) error {
 	return c.JSON(newproduk)
 }
 
-func (controllers *ProdukControllers) DetailProduct(c *fiber.Ctx) error {
-	params := c.AllParams() // "{"id": "1"}"
-
-	intId, errs := strconv.Atoi(params["id"])
-
-	if errs != nil {
-		fmt.Println(errs)
-	}
+func (controllers *ProdukControllers) DetailProduk(c *fiber.Ctx) error {
+	id := c.Params("id")
+	idn, _ := strconv.Atoi(id)
 
 	var produk models.Produk
-	err := models.TampilProdukId(controllers.Db, &produk, intId)
+	err := models.TampilProdukId(controllers.Db, &produk, idn)
 	if err != nil {
 		return c.SendStatus(500) // http 500 internal server error
 	}
+	return c.JSON(produk)
 
-	sess, err := controllers.store.Get(c)
-	if err != nil {
-		panic(err)
-	}
-	val := sess.Get("userId")
-	return c.Status(fiber.StatusOK).JSON(params)
-	return c.JSON(fiber.Map{
-		"message": "Detail Data Produk berhasil Tampil",
-		"UserId":  val,
-	})
 }
 
 func (controllers *ProdukControllers) EditProduk(c *fiber.Ctx) error {
