@@ -4,7 +4,9 @@ import (
 	"projectsrest/database"
 	"projectsrest/models"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
+
 	// "github.com/gofiber/fiber/v2/middleware/session"
 	"github.com/golang-jwt/jwt/v4"
 	"golang.org/x/crypto/bcrypt"
@@ -57,21 +59,42 @@ func (controllers *AuthControllers) Register(c *fiber.Ctx) error {
 	return c.JSON(user)
 }
 
-func (controllers *AuthControllers) Login(c *fiber.Ctx) error {
-	var users models.User
-	user := c.FormValue(users.Username)
-	pass := c.FormValue(users.Username)
-	// Throws Unauthorized error
+type LoginForm struct {
+	Username string `form:"username" json:"username" validate:"required"`
+	Password string `form:"password" json:"password" validate:"required"`
+}
 
-	if user != users.Username || pass != users.Password {
-		return c.SendStatus(fiber.StatusUnauthorized)
+func (controllers *AuthControllers) Login(c *fiber.Ctx) error {
+	var user models.User
+	var form LoginForm
+
+	if err := c.BodyParser(&form); err != nil {
+		return c.JSON("Login Failed!")
+	}
+	var checker = validator.New()
+	errors := checker.Struct(form)
+	if errors != nil {
+		return c.JSON("Login Failed!")
 	}
 
+	er := models.CariUsername(controllers.DB, &user, form.Username)
+	if er != nil {
+		return c.JSON("Username Not Valid!")
+	}
+	// user := c.FormValue(users.Username)
+	// pass := c.FormValue(users.Password)
+	// Throws Unauthorized error
+
+	// if username != users.Username || password != users.Password {
+	// 	return c.SendStatus(fiber.StatusUnauthorized)
+	// }
+
 	// Create the Claims
-	compare := bcrypt.CompareHashAndPassword([]byte(users.Password), []byte(users.Password))
-	if compare != nil {
+	compare := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(form.Password))
+	if compare == nil {
 		exp := time.Now().Add(time.Hour * 72)
 		claims := jwt.MapClaims{
+			"name":  user.Username,
 			"admin": true,
 			"exp":   exp.Unix(),
 		}
